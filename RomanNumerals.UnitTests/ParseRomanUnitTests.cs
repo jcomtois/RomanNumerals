@@ -47,6 +47,10 @@ namespace RomanNumerals.UnitTests
         {
             Assert.That(() => RomanNumerals.ParseRoman(letter),
                 Throws.Nothing);
+
+            int result;
+            Assert.That(() => RomanNumerals.TryParseRoman(letter, out result),
+                Is.True);
         }
 
         [Test]
@@ -55,6 +59,10 @@ namespace RomanNumerals.UnitTests
         {
             Assert.That(() => RomanNumerals.ParseRoman(letter),
                 Throws.TypeOf<InvalidRomanNumeralException>());
+
+            int result;
+            Assert.That(() => RomanNumerals.TryParseRoman(letter, out result),
+                Is.False);
         }
 
         [Test]

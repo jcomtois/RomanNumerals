@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Text;
 
 namespace RomanNumerals
 {
@@ -16,9 +17,44 @@ namespace RomanNumerals
         private static readonly string[] ValidStrings =
             {One, Five, Ten, Fifty, OneHundred, FiveHundred, OneThousand};
 
+        private static readonly int[] MappedValues = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
+
         public static string ToRoman(int number)
         {
-            return string.Empty;
+            if (number <= 0 || number >= 4000)
+            {
+                throw new ArgumentOutOfRangeException(nameof(number), "Must be number 1-3999");
+            }
+
+            return MapValue(number);
+        }
+
+        public static bool TryToRoman(int number, out string result)
+        {
+            result = default(string);
+            try
+            {
+                result = ToRoman(number);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public static bool TryParseRoman(string romanNumeral, out int result)
+        {
+            result = default(int);
+            try
+            {
+                result = ParseRoman(romanNumeral);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         public static int ParseRoman(string romanNumeral)
@@ -29,10 +65,10 @@ namespace RomanNumerals
             }
 
             var upper = romanNumeral.ToUpperInvariant();
-            
+
             if (!ContainsValidLetters(upper))
             {
-                throw new InvalidRomanNumeralException();
+                throw new InvalidRomanNumeralException(romanNumeral);
             }
 
             if (upper.Length == 1)
@@ -42,9 +78,8 @@ namespace RomanNumerals
 
             if (ContainsFourInARow(upper))
             {
-                throw new InvalidRomanNumeralException();
+                throw new InvalidRomanNumeralException(romanNumeral);
             }
-
 
             var value = ParseRomanNumeral(upper);
 
@@ -53,7 +88,55 @@ namespace RomanNumerals
                 return value;
             }
 
-            throw new NotImplementedException();
+            throw new InvalidOperationException($"'{romanNumeral}' - Should not be able to enter this state");
+        }
+
+        private static string MapValue(int number)
+        {
+            switch (number)
+            {
+                case 1:
+                    return One;
+                case 4:
+                    return One + Five;
+                case 5:
+                    return Five;
+                case 9:
+                    return One + Ten;
+                case 10:
+                    return Ten;
+                case 40:
+                    return Ten + Fifty;
+                case 50:
+                    return Fifty;
+                case 90:
+                    return Ten + OneHundred;
+                case 100:
+                    return OneHundred;
+                case 400:
+                    return OneHundred + FiveHundred;
+                case 500:
+                    return FiveHundred;
+                case 900:
+                    return OneHundred + OneThousand;
+                case 1000:
+                    return OneThousand;
+            }
+
+            var sb = new StringBuilder();
+
+            var remainder = number;
+
+            foreach (var value in MappedValues)
+            {
+                while (remainder >= value)
+                {
+                    remainder -= value;
+                    sb.Append(MapValue(value));
+                }
+            }
+
+            return sb.ToString();
         }
 
         private static int ParseRomanNumeral(string romanNumeral)
@@ -65,8 +148,8 @@ namespace RomanNumerals
             for (var index = 0; index < numeral.Length; index++)
             {
                 var currentLetter = numeral[index];
-                var nextLetter = index == numeral.Length - 1 
-                    ? string.Empty 
+                var nextLetter = index == numeral.Length - 1
+                    ? string.Empty
                     : numeral[index + 1];
 
                 switch (currentLetter)
@@ -76,7 +159,7 @@ namespace RomanNumerals
                         {
                             if (previousLetter == One || previousLetter == Five)
                             {
-                                throw new InvalidRomanNumeralException();
+                                throw new InvalidRomanNumeralException(romanNumeral);
                             }
                             sum -= ParseSingleLetter(currentLetter);
                         }
@@ -86,7 +169,7 @@ namespace RomanNumerals
                         }
                         else
                         {
-                            throw new InvalidRomanNumeralException();
+                            throw new InvalidRomanNumeralException(romanNumeral);
                         }
                         break;
                     case Five:
@@ -96,7 +179,7 @@ namespace RomanNumerals
                         }
                         else
                         {
-                            throw new InvalidRomanNumeralException();
+                            throw new InvalidRomanNumeralException(romanNumeral);
                         }
                         break;
                     case Ten:
@@ -104,27 +187,27 @@ namespace RomanNumerals
                         {
                             if (previousLetter == Ten)
                             {
-                                throw new InvalidRomanNumeralException();
+                                throw new InvalidRomanNumeralException(romanNumeral);
                             }
                             sum -= ParseSingleLetter(currentLetter);
                         }
-                        else if (string.IsNullOrWhiteSpace(nextLetter) || new [] {Ten, Five, One}.Contains(nextLetter))
+                        else if (string.IsNullOrWhiteSpace(nextLetter) || new[] {Ten, Five, One}.Contains(nextLetter))
                         {
                             sum += ParseSingleLetter(currentLetter);
                         }
                         else
                         {
-                            throw new InvalidRomanNumeralException();
+                            throw new InvalidRomanNumeralException(romanNumeral);
                         }
                         break;
                     case Fifty:
-                        if (string.IsNullOrWhiteSpace(nextLetter) || new[] { Ten, Five, One }.Contains(nextLetter))
+                        if (string.IsNullOrWhiteSpace(nextLetter) || new[] {Ten, Five, One}.Contains(nextLetter))
                         {
                             sum += ParseSingleLetter(currentLetter);
                         }
                         else
                         {
-                            throw new InvalidRomanNumeralException();
+                            throw new InvalidRomanNumeralException(romanNumeral);
                         }
                         break;
                     case OneHundred:
@@ -132,51 +215,50 @@ namespace RomanNumerals
                         {
                             if (previousLetter == OneHundred)
                             {
-                                throw new InvalidRomanNumeralException();
+                                throw new InvalidRomanNumeralException(romanNumeral);
                             }
                             sum -= ParseSingleLetter(currentLetter);
                         }
-                        else if (string.IsNullOrWhiteSpace(nextLetter) || new[] {OneHundred, Fifty, Ten, Five, One }.Contains(nextLetter))
+                        else if (string.IsNullOrWhiteSpace(nextLetter) || new[] {OneHundred, Fifty, Ten, Five, One}.Contains(nextLetter))
                         {
                             sum += ParseSingleLetter(currentLetter);
                         }
                         else
                         {
-                            throw new InvalidRomanNumeralException();
+                            throw new InvalidRomanNumeralException(romanNumeral);
                         }
                         break;
                     case FiveHundred:
-                        if (string.IsNullOrWhiteSpace(nextLetter) || new[] { OneHundred, Ten, Five, One }.Contains(nextLetter))
+                        if (string.IsNullOrWhiteSpace(nextLetter) || new[] {OneHundred, Fifty, Ten, Five, One}.Contains(nextLetter))
                         {
                             sum += ParseSingleLetter(currentLetter);
                         }
                         else
                         {
-                            throw new InvalidRomanNumeralException();
+                            throw new InvalidRomanNumeralException(romanNumeral);
                         }
                         break;
                     case OneThousand:
                         if (previousLetter == OneHundred && nextLetter == OneHundred)
                         {
-                            throw new InvalidRomanNumeralException();
+                            throw new InvalidRomanNumeralException(romanNumeral);
                         }
-                        if (!string.IsNullOrWhiteSpace(previousLetter) && !new [] {OneThousand, OneHundred}.Contains(previousLetter))
+                        if (!string.IsNullOrWhiteSpace(previousLetter) && !new[] {OneThousand, OneHundred}.Contains(previousLetter))
                         {
-                            throw new InvalidRomanNumeralException();
+                            throw new InvalidRomanNumeralException(romanNumeral);
                         }
-                        if (string.IsNullOrWhiteSpace(nextLetter) || new[] {OneThousand, FiveHundred, OneHundred, Fifty, Ten, Five, One }.Contains(nextLetter))
+                        if (string.IsNullOrWhiteSpace(nextLetter) || new[] {OneThousand, FiveHundred, OneHundred, Fifty, Ten, Five, One}.Contains(nextLetter))
                         {
                             sum += ParseSingleLetter(currentLetter);
                         }
                         else
                         {
-                            throw new InvalidRomanNumeralException();
+                            throw new InvalidRomanNumeralException(romanNumeral);
                         }
                         break;
                     default:
                         throw new InvalidOperationException();
                 }
-
 
                 previousLetter = currentLetter;
             }
@@ -187,7 +269,7 @@ namespace RomanNumerals
         private static bool ContainsFourInARow(string romanNumeral)
         {
             var last = string.Empty;
-            foreach(var letter in romanNumeral.Select(c => c.ToString()))
+            foreach (var letter in romanNumeral.Select(c => c.ToString()))
             {
                 if (last.Contains(letter))
                 {
@@ -215,12 +297,11 @@ namespace RomanNumerals
             return romanNumeral
                 .Select(c => c.ToString())
                 .All(s => ValidStrings.Contains(s));
-
         }
 
-        private static int ParseSingleLetter(string upper)
+        private static int ParseSingleLetter(string romanNumeral)
         {
-            switch (upper)
+            switch (romanNumeral)
             {
                 case One:
                     return 1;
@@ -237,7 +318,7 @@ namespace RomanNumerals
                 case OneThousand:
                     return 1000;
                 default:
-                    throw new InvalidRomanNumeralException();
+                    throw new InvalidRomanNumeralException(romanNumeral);
             }
         }
     }
